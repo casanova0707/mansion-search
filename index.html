@@ -38,8 +38,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif;bac
 .no-result{text-align:center;padding:60px 20px;color:rgba(255,255,255,.5);font-size:15px}
 .toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%) translateY(20px);background:#f0a030;color:#fff;padding:8px 20px;border-radius:20px;font-size:14px;opacity:0;transition:all .3s;pointer-events:none;z-index:100}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
-.fab{position:fixed;bottom:24px;right:24px;width:56px;height:56px;border-radius:50%;background:#f0a030;color:#fff;border:none;font-size:28px;cursor:pointer;box-shadow:0 4px 12px rgba(240,160,48,.4);z-index:20;display:flex;align-items:center;justify-content:center;transition:transform .2s}
+.fab-group{position:fixed;bottom:24px;right:24px;display:flex;flex-direction:column;align-items:center;gap:10px;z-index:20}
+.fab{width:56px;height:56px;border-radius:50%;background:#f0a030;color:#fff;border:none;font-size:28px;cursor:pointer;box-shadow:0 4px 12px rgba(240,160,48,.4);display:flex;align-items:center;justify-content:center;transition:transform .2s}
 .fab:active{transform:scale(.9)}
+.fab-sm{width:42px;height:42px;border-radius:50%;border:none;color:#fff;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+.fab-sm:active{transform:scale(.9)}
+.fab-export{background:#2196F3}
+.fab-import{background:#4CAF50}
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:50;display:none;align-items:flex-end;justify-content:center}
 .overlay.show{display:flex}
 .modal{background:#0e8177;border-radius:20px 20px 0 0;width:100%;max-width:500px;padding:20px 20px 40px;max-height:85vh;overflow-y:auto}
@@ -70,14 +75,19 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif;bac
 <div class="count" id="count"></div>
 <div class="results" id="results"></div>
 <div class="toast" id="toast"></div>
+<div class="fab-group">
+<button class="fab-sm fab-import" onclick="importData()" title="インポート">&#x2B06;</button>
+<button class="fab-sm fab-export" onclick="exportData()" title="エクスポート">&#x2B07;</button>
 <button class="fab" onclick="openAdd()">+</button>
+</div>
+<input type="file" id="importFile" accept=".json" style="display:none" onchange="handleImport(event)">
 
 <div class="overlay" id="overlay" onclick="if(event.target===this)closeModal()">
 <div class="modal" id="modal"></div>
 </div>
 
 <script>
-const BASE=[
+let BASE=[
 ["東区","尾長","尾長東2-6-22","カーサニックス","1234"],
 ["東区","曙","曙4-2-29","St.Field曙","2310"],
 ["東区","曙","曙5-3-5","センチュリー曙","0535"],
@@ -742,7 +752,7 @@ const BASE=[
 ["安芸郡海田町","海田町","安芸郡海田町栄町6-6","クレストコート","6666"]
 ];
 
-const YOMI={"尾長":"おなが","曙":"あけぼの","牛田中":"うしたなか","牛田本町":"うしたほんまち","牛田東":"うしたひがし","牛田新町":"うしたしんまち","中山":"なかやま","光が丘":"ひかりがおか","光":"ひかり","戸坂":"へさか","矢賀":"やが","山根":"やまね","落合":"おちあい","落合南":"おちあいみなみ","可部":"かべ","可部南":"かべみなみ","口田":"くちた","口田南":"くちたみなみ","亀山":"かめやま","利松":"としまつ","五月が丘":"さつきがおか","坪井":"つぼい","美鈴が丘西":"みすずがおかにし","田方":"たがた","五日市昭和台":"しょうわだい","皆賀":"みなが","五日市":"いつかいち","五日市中央":"いつかいちちゅうおう","五日市駅前":"いつかいちえきまえ","三筋":"みすじ","八幡":"やわた","旭園":"あさひえん","吉見園":"よしみえん","新宮苑":"しんぐうえん","隅の浜":"すみのはま","美の里":"みのさと","海老園":"かいろうえん","楽々園":"らくらくえん","宇品海岸":"うじなかいがん","宇品神田":"うじなかんだ","宇品西":"うじなにし","宇品御幸":"うじなみゆき","出島":"でじま","大須賀":"おおすが","大洲":"おおず","比治山本町":"ひじやまほんまち","比治山":"ひじやま","的場":"まとば","金屋町":"きんや","松川":"まつかわ","京橋":"きょうばし","東雲":"しののめ","東雲本町":"しののめほんまち","段原":"だんばら","段原南":"だんばらみなみ","段原山崎":"だんばらやまざき","段原日出":"だんばらひので","霞":"かすみ","西霞":"にしかすみ","出汐":"でしお","皆実":"みなみ","翠":"みどり","西旭":"にしあさひ","仁保":"にほ","仁保新町":"にほしんまち","本浦":"ほんうら","丹那":"たんな","広瀬":"ひろせ","十日市":"とうかいち","榎町":"えのまち","猫屋":"ねこや","堺町":"さかい","小網":"こあみ","住吉":"すみよし","羽衣":"はごろも","大手町":"おおて","国泰寺":"こくたいじ","小町":"こまち","千田":"せんだ","東千田":"ひがしせんだ","南千田西":"みなみせんだにし","平野":"ひらの","竹屋":"たけや","昭和":"しょうわ","昭和町":"しょうわ","鶴見":"つるみ","宝":"たから","田中":"たなか","銀山町":"かなやま","東平塚":"ひがしひらつか","西平塚":"にしひらつか","富士見":"ふじみ","加古町":"かこ","河原町":"かわら","上幟":"かみのぼり","幟":"のぼり","橋本":"はしもと","中町":"なかまち","光南":"こうなん","江波本町":"えばほんまち","江波西":"えばにし","江波二本松":"えばにほんまつ","江波東":"えばひがし","江波南":"えばみなみ","舟入本町":"ふないりほんまち","舟入中町":"ふないりなかまち","舟入南":"ふないりみなみ","舟入川口":"ふないりかわぐち","舟入":"ふないり","舟入幸町":"ふないりさいわい","吉島西":"よしじまにし","吉島東":"よしじまひがし","吉島":"よしじま","白島九軒":"はくしまくげん","西白島":"にしはくしま","白島中":"はくしまなか","東白島":"ひがしはくしま","大塚西":"おおつかにし","祇園":"ぎおん","川内":"かわうち","高取":"たかとり","相田":"あいだ","上安":"かみやす","長束":"ながつか","長束西":"ながつかにし","西原":"にしはら","東原":"ひがしはら","山本":"やまもと","中筋":"なかすじ","長楽寺":"ちょうらくじ","古市":"ふるいち","東野":"ひがしの","中須":"なかす","緑井":"みどりい","大芝":"おおしば","大宮":"おおみや","三篠":"みささ","三篠北町":"みささきたまち","三滝":"みたき","三滝本町":"みたきほんまち","横川新町":"よこがわしんまち","横川":"よこがわ","楠木":"くすのき","打越":"うちこし","中広":"なかひろ","福島":"ふくしま","都":"みやこ","小河内":"おがうち","南観音":"みなみかんおん","観音町":"かんおんまち","東観音町":"ひがしかんおんまち","西観音町":"にしかんおんまち","南観音町":"みなみかんおんまち","上天満":"かみてんま","天満":"てんま","観音新町":"かんおんしんまち","観音本町":"かんおんほんまち","草津本町":"くさつほんまち","草津東":"くさつひがし","草津南":"くさつみなみ","草津梅が台":"くさつうめがだい","井ノ口":"いのくち","井ノ口台":"いのくちだい","井ノ口明神":"いのくちみょうじん","高須":"たかす","古江新町":"ふるえしんまち","古江西":"ふるえにし","古江東":"ふるえひがし","己斐上":"こいうえ","己斐中":"こいなか","己斐西":"こいにし","己斐本町":"こいほんまち","庚午中":"こうごなか","庚午北":"こうごきた","庚午南":"こうごみなみ","下平良":"しもへら","山陽園":"さんようえん","城内":"じょうない","佐方":"さがた","佐方本町":"さがたほんまち","大東":"おおひがし","天神":"てんじん","須賀":"すが","新宮":"しんぐう","本町":"ほんまち","平良山手":"へらやまて","串戸":"くしど","宮内":"みやうち","地御前":"じごぜん","阿品":"あじな","宮島口":"みやじまぐち","梅原":"うめはら","府中町":"ふちゅうちょう","船越":"ふなこし","矢野":"やの","海田町":"かいたまち"};
+let YOMI={"尾長":"おなが","曙":"あけぼの","牛田中":"うしたなか","牛田本町":"うしたほんまち","牛田東":"うしたひがし","牛田新町":"うしたしんまち","中山":"なかやま","光が丘":"ひかりがおか","光":"ひかり","戸坂":"へさか","矢賀":"やが","山根":"やまね","落合":"おちあい","落合南":"おちあいみなみ","可部":"かべ","可部南":"かべみなみ","口田":"くちた","口田南":"くちたみなみ","亀山":"かめやま","利松":"としまつ","五月が丘":"さつきがおか","坪井":"つぼい","美鈴が丘西":"みすずがおかにし","田方":"たがた","五日市昭和台":"しょうわだい","皆賀":"みなが","五日市":"いつかいち","五日市中央":"いつかいちちゅうおう","五日市駅前":"いつかいちえきまえ","三筋":"みすじ","八幡":"やわた","旭園":"あさひえん","吉見園":"よしみえん","新宮苑":"しんぐうえん","隅の浜":"すみのはま","美の里":"みのさと","海老園":"かいろうえん","楽々園":"らくらくえん","宇品海岸":"うじなかいがん","宇品神田":"うじなかんだ","宇品西":"うじなにし","宇品御幸":"うじなみゆき","出島":"でじま","大須賀":"おおすが","大洲":"おおず","比治山本町":"ひじやまほんまち","比治山":"ひじやま","的場":"まとば","金屋町":"きんや","松川":"まつかわ","京橋":"きょうばし","東雲":"しののめ","東雲本町":"しののめほんまち","段原":"だんばら","段原南":"だんばらみなみ","段原山崎":"だんばらやまざき","段原日出":"だんばらひので","霞":"かすみ","西霞":"にしかすみ","出汐":"でしお","皆実":"みなみ","翠":"みどり","西旭":"にしあさひ","仁保":"にほ","仁保新町":"にほしんまち","本浦":"ほんうら","丹那":"たんな","広瀬":"ひろせ","十日市":"とうかいち","榎町":"えのまち","猫屋":"ねこや","堺町":"さかい","小網":"こあみ","住吉":"すみよし","羽衣":"はごろも","大手町":"おおて","国泰寺":"こくたいじ","小町":"こまち","千田":"せんだ","東千田":"ひがしせんだ","南千田西":"みなみせんだにし","平野":"ひらの","竹屋":"たけや","昭和":"しょうわ","昭和町":"しょうわ","鶴見":"つるみ","宝":"たから","田中":"たなか","銀山町":"かなやま","東平塚":"ひがしひらつか","西平塚":"にしひらつか","富士見":"ふじみ","加古町":"かこ","河原町":"かわら","上幟":"かみのぼり","幟":"のぼり","橋本":"はしもと","中町":"なかまち","光南":"こうなん","江波本町":"えばほんまち","江波西":"えばにし","江波二本松":"えばにほんまつ","江波東":"えばひがし","江波南":"えばみなみ","舟入本町":"ふないりほんまち","舟入中町":"ふないりなかまち","舟入南":"ふないりみなみ","舟入川口":"ふないりかわぐち","舟入":"ふないり","舟入幸町":"ふないりさいわい","吉島西":"よしじまにし","吉島東":"よしじまひがし","吉島":"よしじま","白島九軒":"はくしまくげん","西白島":"にしはくしま","白島中":"はくしまなか","東白島":"ひがしはくしま","大塚西":"おおつかにし","祇園":"ぎおん","川内":"かわうち","高取":"たかとり","相田":"あいだ","上安":"かみやす","長束":"ながつか","長束西":"ながつかにし","西原":"にしはら","東原":"ひがしはら","山本":"やまもと","中筋":"なかすじ","長楽寺":"ちょうらくじ","古市":"ふるいち","東野":"ひがしの","中須":"なかす","緑井":"みどりい","大芝":"おおしば","大宮":"おおみや","三篠":"みささ","三篠北町":"みささきたまち","三滝":"みたき","三滝本町":"みたきほんまち","横川新町":"よこがわしんまち","横川":"よこがわ","楠木":"くすのき","打越":"うちこし","中広":"なかひろ","福島":"ふくしま","都":"みやこ","小河内":"おがうち","南観音":"みなみかんおん","観音町":"かんおんまち","東観音町":"ひがしかんおんまち","西観音町":"にしかんおんまち","南観音町":"みなみかんおんまち","上天満":"かみてんま","天満":"てんま","観音新町":"かんおんしんまち","観音本町":"かんおんほんまち","草津本町":"くさつほんまち","草津東":"くさつひがし","草津南":"くさつみなみ","草津梅が台":"くさつうめがだい","井ノ口":"いのくち","井ノ口台":"いのくちだい","井ノ口明神":"いのくちみょうじん","高須":"たかす","古江新町":"ふるえしんまち","古江西":"ふるえにし","古江東":"ふるえひがし","己斐上":"こいうえ","己斐中":"こいなか","己斐西":"こいにし","己斐本町":"こいほんまち","庚午中":"こうごなか","庚午北":"こうごきた","庚午南":"こうごみなみ","下平良":"しもへら","山陽園":"さんようえん","城内":"じょうない","佐方":"さがた","佐方本町":"さがたほんまち","大東":"おおひがし","天神":"てんじん","須賀":"すが","新宮":"しんぐう","本町":"ほんまち","平良山手":"へらやまて","串戸":"くしど","宮内":"みやうち","地御前":"じごぜん","阿品":"あじな","宮島口":"みやじまぐち","梅原":"うめはら","府中町":"ふちゅうちょう","船越":"ふなこし","矢野":"やの","海田町":"かいたまち"};
 
 const LS_EDITS='mc_edits';
 const LS_ADDS='mc_adds';
@@ -754,6 +764,13 @@ function saveJSON(key,val){localStorage.setItem(key,JSON.stringify(val))}
 let edits=loadJSON(LS_EDITS,{});
 let adds=loadJSON(LS_ADDS,[]);
 let dels=loadJSON(LS_DELS,[]);
+Object.assign(YOMI,loadJSON('mc_yomi',{}));
+
+fetch('./data.json').then(r=>r.json()).then(d=>{
+  if(d.data)BASE=d.data;
+  if(d.yomi)Object.assign(YOMI,d.yomi);
+  initDistricts();render();
+}).catch(()=>{initDistricts();render()});
 
 function getData(){
   const result=[];
@@ -772,22 +789,25 @@ function getData(){
   return result;
 }
 
-const districts=[...new Set(BASE.map(r=>r[0]))];
 let activeDistrict='';
 
-const districtBar=document.getElementById('districtBar');
-const allBtn=document.createElement('button');
-allBtn.className='district-btn active';
-allBtn.textContent='全て';
-allBtn.onclick=()=>{activeDistrict='';updateDistrictUI();render()};
-districtBar.appendChild(allBtn);
-districts.forEach(d=>{
-  const b=document.createElement('button');
-  b.className='district-btn';
-  b.textContent=d;
-  b.onclick=()=>{activeDistrict=d;updateDistrictUI();render()};
-  districtBar.appendChild(b);
-});
+function initDistricts(){
+  const districts=[...new Set(BASE.map(r=>r[0]))];
+  const districtBar=document.getElementById('districtBar');
+  districtBar.innerHTML='';
+  const allBtn=document.createElement('button');
+  allBtn.className='district-btn active';
+  allBtn.textContent='全て';
+  allBtn.onclick=()=>{activeDistrict='';updateDistrictUI();render()};
+  districtBar.appendChild(allBtn);
+  districts.forEach(d=>{
+    const b=document.createElement('button');
+    b.className='district-btn';
+    b.textContent=d;
+    b.onclick=()=>{activeDistrict=d;updateDistrictUI();render()};
+    districtBar.appendChild(b);
+  });
+}
 
 function updateDistrictUI(){
   districtBar.querySelectorAll('.district-btn').forEach(b=>{
@@ -938,7 +958,43 @@ function resetEdit(idx){
 
 function closeModal(){document.getElementById('overlay').classList.remove('show')}
 
-render();
+function exportData(){
+  const data={edits,adds,dels,exported:new Date().toLocaleString('ja-JP')};
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='mansion_backup_'+new Date().toISOString().slice(0,10)+'.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+  showToast('バックアップ保存しました');
+}
+
+function importData(){document.getElementById('importFile').click()}
+
+function handleImport(e){
+  const file=e.target.files[0];
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=function(ev){
+    try{
+      const data=JSON.parse(ev.target.result);
+      if(!confirm('バックアップを復元しますか？\n(現在の編集データは上書きされます)'))return;
+      if(data.edits){edits=data.edits;saveJSON(LS_EDITS,edits)}
+      if(data.adds){adds=data.adds;saveJSON(LS_ADDS,adds)}
+      if(data.dels){dels=data.dels;saveJSON(LS_DELS,dels)}
+      if(data.yomi){
+        const customYomi=loadJSON('mc_yomi',{});
+        Object.assign(customYomi,data.yomi);
+        saveJSON('mc_yomi',customYomi);
+        Object.assign(YOMI,customYomi);
+      }
+      render();
+      showToast('復元しました');
+    }catch{showToast('ファイルが読み込めません')}
+  };
+  reader.readAsText(file);
+  e.target.value='';
+}
 
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('./sw.js');
